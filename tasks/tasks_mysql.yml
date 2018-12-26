@@ -1,0 +1,94 @@
+---
+  # Parameters:
+  #  mysql_root_password
+
+  - name: MySQL | Check if is installed
+    command: test -x /usr/bin/mysql
+    when: ansible_system == "Linux"
+    register: mysql_present
+    ignore_errors: yes
+    tags:
+      - mysql
+
+  - name: MySQL | Add the GnuPG key for the Codership repository
+    apt_key:
+      keyserver: keyserver.ubuntu.com
+      id: BC19DDBA
+    become: yes  
+    when: mysql_present is failed
+    tags:
+      - mysql
+
+# Codership Repository (Galera Cluster for MySQL)
+  - name:  Codership Repository (Galera Cluster for MySQL)
+    apt_repository:
+      repo: "deb http://releases.galeracluster.com/mysql-wsrep-{{ mysql_family }}/ubuntu {{ ansible_distribution_release }} main"
+      state: present
+      filename: galera
+    become: yes  
+    when: mysql_present is failed
+    tags:
+      - mysql
+
+  - name:  Codership Repository (Galera Cluster for MySQL)
+    apt_repository:
+      repo: "deb http://releases.galeracluster.com/galera-3/ubuntu {{ ansible_distribution_release }} main"
+      state: present
+      filename: galera
+    become: yes  
+    when: mysql_present is failed
+    tags:
+      - mysql
+
+  - name: MySQL | Preset root password
+    debconf:
+      name: "mysql-wsrep-server-{{ mysql_family }}"
+      question: "{{ item }}"
+      vtype: password
+      value: "{{ mysql_root_password }}"
+    with_items:
+      - mysql-server/root_password
+      - mysql-server/root_password_again
+    become: yes
+    tags:
+      - mysql
+
+  - name: MySQL | Set galera pinning
+    template: src="templates/galera.pref.j2" dest="/etc/apt/preferences.d/galera.pref"
+    become: yes
+    tags:
+      - mysql
+
+  - name: MySQL | Install galera parts
+    apt: update-cache=yes force=yes state=present pkg="{{ item }}"
+    when: ansible_os_family == "Debian" and mysql_present is failed
+    with_items:
+      - galera-3
+      - galera-arbitrator-3
+    become: yes
+    tags:
+      - mysql
+
+  - name: MySQL | Install mysql wrep parts
+    apt: update-cache=yes force=yes state=present pkg="{{ item }}"
+    when: ansible_os_family == "Debian" and mysql_present is failed
+    with_items:
+      - "mysql-wsrep-{{ mysql_family }}"
+    become: yes
+    tags:
+      - mysql
+
+  - name: MySQL | install libmysqlclient-dev
+    apt: name=libmysqlclient-dev update_cache=yes state=latest
+    when: ansible_os_family == "Debian" and mysql_present is failed
+    become: yes
+    tags: 
+      - mysql
+
+  - name: MySQL | Leave in stopped state for later configuration
+    service: name=mysql state=stopped
+    when: docker_test is not defined
+    become: yes
+    tags:
+      - mysql
+

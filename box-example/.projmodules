@@ -1,0 +1,4 @@
+[submodule "roles/sa-mysql-galera"]
+        path = roles/sa-mysql-galera
+        url = https://github.com/softasap/sa-mysql-galera.git
+

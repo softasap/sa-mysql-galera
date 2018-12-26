@@ -1,0 +1,12 @@
+---
+# defaults file for sa-mysql-galera
+
+  role_dir: "{{role_path}}"
+
+  option_harden_mysql: true
+
+  mysql_root_user: root
+  mysql_root_password: devroot
+
+  mysql_family: 5.7  # 5.5, 5.7
+
