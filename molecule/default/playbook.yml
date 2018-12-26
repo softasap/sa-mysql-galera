@@ -36,8 +36,8 @@
 
     - name: Copy certs dir
       copy:
-        src: "files/ssl/{{item}}"
-        dest: "/etc/mysql/ssl/{{item}}"
+        src: "files/ssl/{{ item }}"
+        dest: "/etc/mysql/ssl/{{ item }}"
       become: yes
       with_items:
         - ca-cert.pem
